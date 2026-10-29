@@ -1,0 +1,52 @@
+.ds-page { max-width: 1440px; margin: auto; padding: 0 28px; }
+.ds-header { display:flex; align-items:center; gap:20px; min-height:76px; border-bottom:1px solid var(--border); }
+.ds-header > a:first-child { font-size:20px; font-weight:650; }
+.ds-header > span { flex:1; color:var(--text-secondary); }
+.ds-header > a:last-child { display:flex; align-items:center; gap:6px; }
+.ds-layout { display:grid; grid-template-columns:224px minmax(0,1fr); gap:48px; }
+.ds-layout nav { position:sticky; top:16px; align-self:start; display:grid; gap:2px; padding:24px 0; max-height:calc(100vh - 32px); overflow:auto; }
+.ds-layout nav a { padding:8px 10px; border-radius:6px; color:var(--text-secondary); }
+.ds-layout nav a:hover { color:var(--foreground); background:var(--surface-muted); }
+.ds-content { display:block; max-width:960px; min-width:0; }
+.ds-content > section { padding:40px 0; border-bottom:1px solid var(--border); scroll-margin-top:20px; }
+.ds-content h1 { font-size:32px; line-height:1.2; letter-spacing:-.025em; margin:18px 0; }
+.ds-content h2 { font-size:24px; line-height:1.3; margin:0 0 12px; }
+.ds-content h3 { font-size:16px; margin:26px 0 12px; }
+.ds-content p { line-height:1.7; color:var(--text-secondary); max-width:80ch; }
+.ds-lead { font-size:18px; }
+.ds-rules { margin:24px 0 0; display:grid; gap:22px; }
+.ds-rules > div { display:grid; grid-template-columns:160px minmax(0,1fr); gap:24px; }
+.ds-rules dt { font-weight:600; }
+.ds-rules dd { margin:0; line-height:1.7; color:var(--text-secondary); }
+.ds-examples { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:16px 0; }
+.ds-fields { display:grid; gap:18px; max-width:620px; }
+.ds-table-wrap { overflow:auto; }
+.ds-content table { width:100%; border-collapse:collapse; font-size:12px; }
+.ds-content caption { text-align:left; padding:12px 0; color:var(--text-secondary); }
+.ds-content th,.ds-content td { text-align:left; vertical-align:top; padding:12px; border-bottom:1px solid var(--border); overflow-wrap:anywhere; }
+.ds-content td code { font-weight:400; }
+.ds-content footer { padding:24px 0 48px; color:var(--text-muted); line-height:1.6; overflow-wrap:anywhere; }
+@media(max-width:900px) { .ds-layout { grid-template-columns:1fr; gap:0; } .ds-layout nav { position:static; display:flex; flex-wrap:wrap; max-height:none; gap:4px; } .ds-rules > div { grid-template-columns:1fr; gap:6px; } .ds-page { padding:0 16px; } .ds-header { flex-wrap:wrap; gap:8px; padding:12px 0; } }
+.ds-code { margin:12px 0; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:auto; font:12px/1.7 var(--font-mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+.ds-checklist { padding-left:24px; line-height:1.7; display:grid; gap:10px; }
+.ds-swatches { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:16px; }
+.ds-swatches > div { display:grid; gap:8px; }
+.ds-swatches span { display:block; height:64px; border-radius:8px; border:1px solid var(--border-strong); }
+.ds-swatches code { font-size:11px; }
+.ds-spacing { display:grid; gap:10px; }
+.ds-spacing > div { display:flex; align-items:center; gap:16px; }
+.ds-spacing code { width:85px; font-size:12px; }
+.ds-spacing span { height:8px; background:var(--foreground); }
+.ds-spacing small { color:var(--text-secondary); }
+.ds-brand-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.ds-logo-preview { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.ds-logo-preview img { display:block; width:100%; max-height:320px; object-fit:contain; }
+.ds-logo-preview.checker { background-image:conic-gradient(#ffffff14 25%, transparent 0 50%, #ffffff14 0 75%, transparent 0); background-size:24px 24px; }
+.ds-brand-downloads { display:flex; gap:16px; margin:12px 0 6px; }
+.ds-brand-downloads a { text-decoration:underline; text-underline-offset:4px; }
+@media(max-width:600px) { .ds-brand-grid { grid-template-columns:1fr; } }
+
+.ds-logo-group { margin-top:32px; }
+.ds-brand-downloads a, .ds-kit-download { display:inline-flex; align-items:center; gap:6px; min-height:44px; }
+.ds-brand-grid .ds-logo-label { margin:10px 0 0; font-size:12px; }
+.ds-brand-grid .ds-logo-preview img { height:180px; }

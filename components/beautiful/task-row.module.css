@@ -1,0 +1,85 @@
+/* Beautiful UI TaskRows list variant, adapted to Forma tokens. See LICENSE. */
+.row:global(.task-row) {
+  min-height: 60px;
+  padding: 8px 16px;
+  gap: 10px;
+  border-color: var(--border-subtle);
+  transition: background-color 160ms ease;
+}
+.row:global(.task-row):hover, .row:global(.task-row):focus-within {
+  background: color-mix(in oklab, var(--surface-muted) 55%, var(--surface));
+}
+.row :global(.task-title) { font-weight: 500; }
+.row :global(.task-end) { gap: 4px; }
+.completion {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: var(--foreground);
+}
+.completion:disabled { opacity: .5; cursor: not-allowed; }
+.completion:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border-input);
+  border-radius: 50%;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.completion:hover:not(:disabled) .ring { border-color: var(--foreground); }
+.checked, .syncRing[data-tone="done"] { color: var(--success); background: color-mix(in oklab, var(--success) 12%, var(--surface)); border-color: var(--success); }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.pill[data-tone="done"] { color: var(--success); background: color-mix(in oklab, var(--success) 12%, var(--surface)); }
+.pill[data-tone="active"] { color: var(--foreground); border: 1px solid var(--border); }
+.pill[data-tone="failed"], .syncRing[data-tone="failed"] { color: var(--danger); background: color-mix(in oklab, var(--danger) 10%, var(--surface)); }
+.sync {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+.syncCopy { flex: 1; min-width: 0; }
+.syncCopy h3 { margin: 0 0 4px; font-size: var(--text-sm); font-weight: 600; }
+.syncCopy p { font-size: var(--text-xs); overflow-wrap: anywhere; }
+.syncRing { margin-top: 1px; }
+.syncRing[data-tone="active"] { border-top-color: var(--foreground); }
+.syncRing[data-tone="active"] > svg { animation: beautiful-spin 1.2s linear infinite; }
+@keyframes beautiful-spin { to { transform: rotate(360deg); } }
+@media (max-width: 767px) {
+  .row:global(.task-row) { padding: 6px 8px; gap: 4px; }
+  .row :global(.task-meta) { display: flex; grid-column: 2 / -1; grid-row: 2; flex-wrap: wrap; white-space: normal; padding-bottom: 6px; }
+  .sync { flex-wrap: wrap; }
+  .sync > .pill { margin-left: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row:global(.task-row), .ring { transition: none; }
+  .syncRing[data-tone="active"] > svg { animation: none; }
+}

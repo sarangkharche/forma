@@ -1,0 +1,242 @@
+[
+  {
+    "name": "forma-signal-mark-mono-dark-transparent",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "mono-dark",
+    "background": "transparent",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-mark-mono-dark-solid",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "mono-dark",
+    "background": "solid",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-mark-mono-light-transparent",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "mono-light",
+    "background": "transparent",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-mark-mono-light-solid",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "mono-light",
+    "background": "solid",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-mark-color-dark-transparent",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "color-dark",
+    "background": "transparent",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-mark-color-dark-solid",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "color-dark",
+    "background": "solid",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-mark-color-light-transparent",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "color-light",
+    "background": "transparent",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-mark-color-light-solid",
+    "family": "signal",
+    "layout": "mark",
+    "palette": "color-light",
+    "background": "solid",
+    "width": 512,
+    "height": 512,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-horizontal-mono-dark-transparent",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "mono-dark",
+    "background": "transparent",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-horizontal-mono-dark-solid",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "mono-dark",
+    "background": "solid",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-horizontal-mono-light-transparent",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "mono-light",
+    "background": "transparent",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-horizontal-mono-light-solid",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "mono-light",
+    "background": "solid",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-horizontal-color-dark-transparent",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "color-dark",
+    "background": "transparent",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-horizontal-color-dark-solid",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "color-dark",
+    "background": "solid",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-horizontal-color-light-transparent",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "color-light",
+    "background": "transparent",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-horizontal-color-light-solid",
+    "family": "signal",
+    "layout": "horizontal",
+    "palette": "color-light",
+    "background": "solid",
+    "width": 1600,
+    "height": 480,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-stacked-mono-dark-transparent",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "mono-dark",
+    "background": "transparent",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-stacked-mono-dark-solid",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "mono-dark",
+    "background": "solid",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-stacked-mono-light-transparent",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "mono-light",
+    "background": "transparent",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-stacked-mono-light-solid",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "mono-light",
+    "background": "solid",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-stacked-color-dark-transparent",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "color-dark",
+    "background": "transparent",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-stacked-color-dark-solid",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "color-dark",
+    "background": "solid",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#f4f2ed"
+  },
+  {
+    "name": "forma-signal-stacked-color-light-transparent",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "color-light",
+    "background": "transparent",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#191919"
+  },
+  {
+    "name": "forma-signal-stacked-color-light-solid",
+    "family": "signal",
+    "layout": "stacked",
+    "palette": "color-light",
+    "background": "solid",
+    "width": 1000,
+    "height": 1000,
+    "solidColor": "#191919"
+  }
+]

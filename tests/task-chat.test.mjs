@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createStore} from '../lib/store.mjs';
+import {queueTaskChat,attachTaskChat,FORMA_CHAT_WORKSPACE} from '../lib/task-chat.mjs';
+function fixture(t){const dir=mkdtempSync(join(tmpdir(),'forma-chat-'));const store=createStore(dir,{seed:false});t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return store;}
+test('linked task opens its existing chat without creating another',t=>{const store=fixture(t);const task=store.create({title:'Task',chatUrl:'codex://threads/01a11671-972f-7a11-9122-b37d3345c957'});assert.equal(queueTaskChat(task.id,task.version,store).chatUrl,task.chatUrl);assert.equal(store.controlState().commands.length,0);});
+test('unlinked chat creation uses the workspace and deduplicates repeated clicks',t=>{const store=fixture(t);const task=store.create({title:'Task'});assert.throws(()=>queueTaskChat(task.id,task.version+1,store),e=>e.status===409);const command=queueTaskChat(task.id,task.version,store);assert.equal(command.cwd,FORMA_CHAT_WORKSPACE);assert.equal(queueTaskChat(task.id,task.version,store).id,command.id);});
+test('attaching a chat preserves intervening edits and protects it from ingestion',t=>{const store=fixture(t);store.ingest({tasks:[{sourceKey:'test:task',title:'Task'}]});let task=store.list()[0];store.update(task.id,{title:'Edited',status:'done'},task.version);const chat='01a11671-972f-7a11-9122-b37d3345c957';attachTaskChat(task.id,chat,store);store.ingest({tasks:[{sourceKey:'test:task',title:'Source title',chatUrl:'codex://threads/01a11756-5b71-72d3-92c8-1de692fbae5a'}]});task=store.get(task.id);assert.equal(task.title,'Edited');assert.equal(task.status,'done');assert.equal(task.chatUrl,`codex://threads/${chat}`);assert.equal(attachTaskChat(task.id,'01a11756-5b71-72d3-92c8-1de692fbae5a',store).chatUrl,task.chatUrl);});
+
+test('a partial creation retry reuses its verified thread instead of creating a duplicate',t=>{const store=fixture(t);const task=store.create({title:'Task'});const first=queueTaskChat(task.id,task.version,store);store.saveControlState(state=>{Object.assign(state.commands[0],{status:'failed',threadId:'01a11671-972f-7a11-9122-b37d3345c957',error:'Connection lost'});return state;});const retry=queueTaskChat(task.id,task.version,store);assert.equal(retry.id,first.id);assert.equal(retry.status,'queued');assert.equal(retry.threadId,'01a11671-972f-7a11-9122-b37d3345c957');assert.equal(store.controlState().commands.length,1);});

@@ -1,14 +1,11 @@
-import { mkdirSync, writeFileSync, chmodSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { claudeSyncConfigPath, readClaudeSyncConfig } from '../lib/providers/claude-sync.mjs';
+import { saveClaudeSyncConfig } from '../lib/setup.mjs';
 try {
   const input = process.argv[2];
-  if (!input) throw new Error('Usage: npm run configure:claude-sync -- /absolute/path/config.json');
+  if (!input || process.argv.slice(3).some(value => value !== '--replace-config')) throw new Error('Usage: npm run configure:claude-sync -- /absolute/path/config.json [--replace-config]');
   const config = readClaudeSyncConfig(input);
   if (!config) throw new Error('The supplied Claude sync config does not exist.');
   const target = claudeSyncConfigPath();
-  mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
-  writeFileSync(target, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
-  chmodSync(target, 0o600);
+  saveClaudeSyncConfig(config, target, { replace: process.argv.includes('--replace-config') });
   console.log('Claude source sync configuration saved. Select Claude Code and Sync in Forma.');
 } catch (error) { console.error(error.message); process.exitCode = 1; }

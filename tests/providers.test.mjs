@@ -34,6 +34,14 @@ test('an existing Codex link does not block a separate Claude context session',t
  assert.equal(store.get(task.id).chatUrl,task.chatUrl);
  setProvider(store,'codex');assert.equal(queueTaskChat(task.id,task.version,store).chatUrl,task.chatUrl);
 });
+test('explicit provider selection or an AI request reenables AI after manual setup',t=>{
+ const {dir,store}=fixture(t);const task=store.create({title:'Manual task',workspacePath:dir});
+ store.saveControlState(state=>({...state,setup:{aiEnabled:false}}));
+ setProvider(store,'claude');assert.equal(store.controlState().setup.aiEnabled,true);
+ store.saveControlState(state=>({...state,setup:{aiEnabled:false}}));
+ queueAnalysis(task.id,task.version,'Read only',store);assert.equal(store.controlState().setup.aiEnabled,true);
+ assert.equal(store.get(task.id).title,'Manual task');assert.equal(store.get(task.id).status,'todo');
+});
 test('runner requires successful terminal output; handles malformed, error and missing results',async()=>{
  const success=startProviderRun({provider:'claude',prompt:'test',cwd:tmpdir(),spawn:scriptSpawn(`console.log(${JSON.stringify(init)});console.log(${JSON.stringify(reply)})`)});assert.equal((await success.done).text,'Verified result');
  for(const script of ["console.log('not json')","console.log('null')",'console.log(JSON.stringify({type:"assistant",message:{content:{}}}))','console.log(JSON.stringify({type:"result",subtype:"success",result:{unexpected:true}}))','console.log(JSON.stringify({type:"assistant",message:{content:[{type:"text",text:"partial"}]}}))','console.log(JSON.stringify({type:"result",subtype:"error",is_error:true,result:"denied"}))',`console.log(${JSON.stringify(reply)});process.exitCode=1`]) {

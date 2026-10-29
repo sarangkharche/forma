@@ -4,12 +4,12 @@ Forma is a local task dashboard with an optional AI control centre, source sync 
 
 ## Requirements
 
-- Node.js 22.13 or newer and npm. Check with `node --version` and `npm --version`.
+- Node.js 22.16 or newer in the 22 series, or Node 24 or newer and npm. Use the latest patch of Node 22 or 24. Check with `node --version` and `npm --version`. The SQLite backup API requires this minimum; Node 23 is unsupported.
 - Git, to clone the repository.
 - A modern browser. Browser notifications additionally require notification permission and a supported browser.
 - For AI features, install and sign in to Codex CLI or Claude Code. The task dashboard works without either CLI. Choose your provider in the Agents view. Forma does not need an API key of its own; the selected CLI manages authentication and billing.
 
-The app binds to `127.0.0.1` on port `5184`. The login service described below is specific to macOS. Other platforms may run the app manually, but their startup and notification behaviour has not been verified here.
+The app binds to `127.0.0.1` on port `5184`. The automated release checks target macOS and Linux with Node 22 and 24. Login startup is available on macOS. Windows remains unverified. Browser notification delivery and connector access also depend on your machine and account. See [release verification](docs/release-checks.md) for the current evidence and remaining checks.
 
 ## Install and run
 
@@ -17,17 +17,23 @@ The app binds to `127.0.0.1` on port `5184`. The login service described below i
 git clone https://github.com/sarangkharche/forma.git
 cd forma
 npm ci
-npm run dev
-```
-
-Open [Forma](http://127.0.0.1:5184). Keep the terminal open while using it; press `Ctrl+C` to stop. For a production build instead:
-
-```sh
+npm run setup
+npm run doctor
 npm run build
 npm start
 ```
 
-Both commands start the web server and the local notification and control workers. If port 5184 is already in use, stop the other process or existing Forma service first. The project currently uses Next.js and Node's SQLite support; Node may print an experimental SQLite warning.
+Open [Forma](http://127.0.0.1:5184). Keep the terminal open while using it; press `Ctrl+C` to stop. Setup can skip AI entirely so you can start with manual tasks. It preserves existing tasks and asks before replacing source configuration. The project disables dependency lifecycle scripts during installation; the clean install and build are checked in CI. CI uses npm 11.9.0.
+
+For development after setup, use `npm run dev`. For unattended manual setup:
+
+```sh
+npm run setup -- --skip-ai --noninteractive
+```
+
+Doctor checks local versions, permissions and CLI capabilities. Add `--check-auth` to check the selected CLI’s local sign in status. It never sends a model prompt or tests a source connection. `npm run doctor -- --json` returns a safe diagnostic report for troubleshooting.
+
+`npm start` and `npm run dev` start the web server and local notification and control workers. Skipping AI prevents background CLI discovery until you explicitly select a provider or queue an AI action. If port 5184 is already in use, stop the other process or existing Forma service first. The project currently uses Next.js and Node's SQLite support; Node may print an experimental SQLite warning.
 
 ## Your tasks
 
@@ -96,7 +102,9 @@ Codex Sync sends the saved task snapshot to the local Codex run as context. If t
 
 Claude Sync works independently of Codex. It uses only MCP servers and complete tool names from a private local configuration. Start with your service's official MCP setup instructions and the [Claude Code MCP reference](https://code.claude.com/docs/en/mcp). Use credentials limited to reading wherever the service supports them. Verify each tool's real name and behaviour before adding it; a tool name alone does not establish that it only reads data.
 
-Save a configuration like this to `/absolute/path/claude-sync.json`:
+For guided setup, run `npm run setup`, choose Claude and enter `guided` at the optional source prompt. It asks for the trusted server URL, source account and scope and exact tool names. You can use unqualified tool names and setup adds the server prefix. You still need the real tool names and read permissions from your MCP service. Setup does not connect, log in or prove source identity.
+
+For advanced setup, save a configuration like this to `/absolute/path/claude-sync.json`:
 
 ```json
 {
@@ -125,6 +133,8 @@ Validate and copy the file into Forma's private data directory:
 ```sh
 npm run configure:claude-sync -- /absolute/path/claude-sync.json
 ```
+
+Existing configuration is preserved. Add `--replace-config` only when you intend to replace it.
 
 The default location is `.todos/claude-sync.json` under the directory where Forma starts or `claude-sync.json` inside `TODOS_DATA_DIR` when set. To use another file directly, set `FORMA_CLAUDE_SYNC_CONFIG` to its absolute path before starting Forma. Config changes apply to the next Sync run. Changes to environment variables or inherited credentials require starting Forma again.
 
@@ -158,7 +168,23 @@ Replace the address with your authorised account. **This saves an account guard;
 
 By default data is stored in `.todos/tasks.sqlite` under the directory where Forma starts. `.todos/`, environment files and dependencies are excluded from Git. Do not commit your database, exports, secrets or private task data. `TODOS_DATA_DIR` can select a different local data directory; set it before launching the server or running ingestion.
 
-The control worker creates daily consistent SQLite backups and retains seven in `.todos/backups` by default. To restore, stop Forma, preserve the entire current `.todos` directory, then copy the chosen backup to `tasks.sqlite` in a fresh data directory. Do not replace an active database or separately copy its WAL files.
+The control worker creates daily consistent SQLite backups and retains seven in `.todos/backups` by default. You can also create an online consistent backup yourself, including committed WAL data:
+
+```sh
+mkdir -p "$HOME/forma-backups"
+npm run backup -- "$HOME/forma-backups/tasks.sqlite"
+```
+
+Choose a new file name for each backup. Backups contain private tasks, decisions and settings including notification keys. Keep them private. Source config files and external credentials are separate.
+
+Restore into a new directory, then stop any existing Forma process before starting the restored copy:
+
+```sh
+npm run restore -- "$HOME/forma-backups/tasks.sqlite" "$HOME/forma-restored"
+TODOS_DATA_DIR="$HOME/forma-restored" npm start
+```
+
+Restore checks SQLite integrity and Forma data and refuses to overwrite an existing directory. Your original data remains available. A failed restore may leave its new directory for inspection. Never replace an active database or separately copy its WAL files. Review restored source coverage and browser subscriptions before relying on reminders.
 
 On macOS, optional login startup requires a successful production build and a free port:
 
@@ -167,7 +193,16 @@ npm run build
 npm run install:startup
 ```
 
-This installs the `com.forma.local` user LaunchAgent. Logs are in `.todos/runtime.log` and `.todos/runtime-error.log`. Stop the service with `launchctl bootout gui/$(id -u)/com.forma.local`. Installation changes your login configuration and is optional.
+This installs the `com.forma.local` user LaunchAgent. It captures the CLI search path and any explicit data, chat workspace and Claude config paths. It does not copy API keys or other credential environment variables. Use the CLI’s stored sign in or a separately configured credential mechanism. Logs are in the selected data directory as `runtime.log` and `runtime-error.log`.
+
+Preview or remove the service without deleting task data:
+
+```sh
+npm run install:startup -- --dry-run
+npm run uninstall:startup
+```
+
+The installer checks ownership before changing a service. An older unmarked plist is preserved and refused. If upgrading from that version, inspect `~/Library/LaunchAgents/com.forma.local.plist`, confirm it points to your Forma checkout, stop that exact service and move its plist to a private backup location before installing again. Login startup is optional; manual `npm start` continues to work.
 
 ## For agents and integrations
 
@@ -212,13 +247,15 @@ Review the user's saved data and intended scope before importing. Preserve manua
 npm test
 npm run lint
 npm run build
+npm run smoke
+npm audit --audit-level=high
 ```
 
 If the app won't start, check Node's version, run `npm ci` again and confirm port 5184 is free. If the dashboard loads but Sync fails, check the selected CLI's sign in, availability on `PATH`, connector identity and permissions, then inspect the reported run error. For Claude, also validate the private Sync configuration and authenticate its exact MCP server definitions. For missing browser alerts, check browser permission, system settings, quiet hours and the inbox. For a missing meeting, check the configured account and whether a separate verified calendar ingestion has actually run.
 
 Claude source Sync has automated synthetic MCP transport, guard, ingestion and recovery checks. The real Claude CLI connected to the synthetic server and ran the startup hook. Model driven source reads, imports and write denial remain unverified because the verification account hit its individual spend limit. No real service account access was tested.
 
-The provider release has automated adapter, lifecycle and persistence tests plus a production build. Live synthetic prompts were verified with both installed CLIs; source access and user account integrations are separate checks. Connector access, calendar imports, browser delivery and startup on another machine depend on local configuration and were not verified by that release test. Dependencies should be audited before use; the release installation reported one high and one critical vulnerability.
+The dependency update resolves the previously reported Next.js and Zod findings; the current audit reports zero vulnerabilities. CI performs a frozen install with scripts disabled, audit, lint, tests, production build and an isolated app smoke check on macOS and Linux with Node 22 and 24. Smoke checks task edits, completion, reminder preferences, backups, restore and persistence across restart without launching AI. A green pipeline does not prove a customer’s connector access or OS notification delivery. See [release verification](docs/release-checks.md).
 
 Forma uses UIArc components under their included MIT notice and Morphicons with Lucide icon data.
 

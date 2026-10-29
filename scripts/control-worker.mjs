@@ -48,10 +48,11 @@ async function tick() {
         }
       } catch (error) { amend(command.id,{status:'failed',error:error.message.slice(0,500)}); }
     }
-    const needsCodex = selectedProvider(store) === 'codex' || store.controlState().agents.some(a => isCodex(a) && a.managed && a.status === 'running');
+    const currentState = store.controlState(), aiEnabled = currentState.setup?.aiEnabled !== false;
+    const needsCodex = (aiEnabled && selectedProvider(store) === 'codex') || currentState.agents.some(a => isCodex(a) && a.managed && a.status === 'running');
     if (!needsCodex) {
       bridge.close();
-      store.saveControlState(state => ({...state, workerAt:new Date().toISOString(), connected:true, connectionError:null}));
+      store.saveControlState(state => ({...state, workerAt:new Date().toISOString(), connected:aiEnabled, connectionError:aiEnabled ? null : 'AI is optional and currently disabled. Enable a provider in Agents when ready.'}));
       return;
     }
     const listed = await bridge.call('thread/list',{limit:40,sortKey:'updated_at',useStateDbOnly:true});

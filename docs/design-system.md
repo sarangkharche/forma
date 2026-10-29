@@ -260,7 +260,7 @@ Use “confirmed” only for observed outcomes. Use “recommended” for propos
 
 ## Application
 
-Next.js 16.3.8, React 19.2.4 and TypeScript. App Router pages and API routes. Node 22.13 or newer. Native SQLite is the local persistent database. npm start supervises the local notification and control workers.
+Next.js 16.4.3, React 19.2.4 and TypeScript. App Router pages and API routes. Node 22.16 or newer in the 22 series, or Node 24 or newer. Native SQLite is the local persistent database. npm start supervises the local notification and control workers.
 
 ## Components
 

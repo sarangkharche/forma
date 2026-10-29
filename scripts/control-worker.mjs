@@ -1,3 +1,5 @@
+import { ClaudeRuntime, recoverClaudeRuns } from '../lib/providers/claude-runtime.mjs';
+import { selectedProvider } from '../lib/providers/index.mjs';
 import { attachTaskChat, FORMA_CHAT_WORKSPACE } from '../lib/task-chat.mjs';
 import { taskBrief } from '../lib/control.mjs';
 import { startSyncRun } from '../lib/sync-runner.mjs';
@@ -6,6 +8,10 @@ import { getStore } from '../lib/store.mjs';
 import { mkdirSync, readdirSync, unlinkSync, statSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 const store = getStore(), bridge = new CodexBridge(), syncRuns = new Set();
+const claude = new ClaudeRuntime(store);
+const runtimes = { claude };
+const isCodex = record => !record.provider || record.provider === 'codex';
+recoverClaudeRuns(store);
 let running = false, stopped = false;
 store.saveControlState(state => { for (const command of state.commands) if (command.status === 'processing' || (command.type === 'sync' && command.status === 'submitted')) { command.status = 'failed'; command.error = 'Worker restarted during this request. Check Codex before retrying.'; } return state; });
 function amend(id, changes) { store.saveControlState(state => { const command = state.commands.find(c => c.id === id); if (command) Object.assign(command, changes); return state; }); }
@@ -17,6 +23,10 @@ async function tick() {
       if (store.controlState().commands.find(c=>c.id===command.id)?.status !== 'queued') continue;
       amend(command.id,{status:'processing'});
       try {
+        if (runtimes[command.provider]) {
+          await runtimes[command.provider].dispatch(command);
+          continue;
+        }
         if (command.type === 'sync') {
           const child = startSyncRun(store,command,FORMA_CHAT_WORKSPACE); syncRuns.add(child); child.on('close',()=>syncRuns.delete(child));
         } else if (command.type === 'chat') {
@@ -38,22 +48,28 @@ async function tick() {
         }
       } catch (error) { amend(command.id,{status:'failed',error:error.message.slice(0,500)}); }
     }
+    const needsCodex = selectedProvider(store) === 'codex' || store.controlState().agents.some(a => isCodex(a) && a.managed && a.status === 'running');
+    if (!needsCodex) {
+      bridge.close();
+      store.saveControlState(state => ({...state, workerAt:new Date().toISOString(), connected:true, connectionError:null}));
+      return;
+    }
     const listed = await bridge.call('thread/list',{limit:40,sortKey:'updated_at',useStateDbOnly:true});
     const previous = store.controlState();
-    for (const command of previous.commands.filter(c => c.type === 'chat' && c.status === 'completed' && c.threadId)) {
+    for (const command of previous.commands.filter(c => isCodex(c) && c.type === 'chat' && c.status === 'completed' && c.threadId)) {
       const turns = await bridge.call('thread/turns/list', { threadId: command.threadId, limit: 1, sortDirection: 'desc', itemsView: 'summary' });
       if (['completed', 'failed', 'interrupted'].includes(turns.data[0]?.status)) {
         await bridge.call('thread/unsubscribe', { threadId: command.threadId });
       }
     }
-    const managed = new Map(previous.agents.filter(a=>a.managed).map(a=>[a.id,a]));
+    const managed = new Map(previous.agents.filter(a=>a.managed && isCodex(a)).map(a=>[a.id,a]));
     const threads = new Map(listed.data.map(t=>[t.id,t]));
     const linked = new Set(store.list().flatMap(t=>[t.chatUrl,...(t.relatedChats||[])].filter(Boolean).map(url=>url.split('/').at(-1))));
-    for (const id of new Set([...managed.keys(),...linked,...previous.commands.map(command=>command.threadId).filter(Boolean)])) if (!threads.has(id)) { try { const result=await bridge.call('thread/read',{threadId:id,includeTurns:false});threads.set(id,result.thread); } catch { /* Keep any managed record marked stale below. */ } }
+    for (const id of new Set([...managed.keys(),...linked,...previous.commands.filter(isCodex).map(command=>command.threadId).filter(Boolean)])) if (!threads.has(id)) { try { const result=await bridge.call('thread/read',{threadId:id,includeTurns:false});threads.set(id,result.thread); } catch { /* Keep any managed record marked stale below. */ } }
     const agents = [];
     for (const thread of threads.values()) {
       const existing=managed.get(thread.id);
-      const agent={...existing,id:thread.id,title:existing?.title || thread.name || thread.preview.slice(0,100) || 'Untitled chat',cwd:thread.cwd,updatedAt:new Date(thread.updatedAt*1000).toISOString(),managed:Boolean(existing),status:'saved',evidence:'Saved chat metadata. Desktop live status is not available through this connection.',result:existing?.result || ''};
+      const agent={...existing,provider:'codex',id:thread.id,title:existing?.title || thread.name || thread.preview.slice(0,100) || 'Untitled chat',cwd:thread.cwd,updatedAt:new Date(thread.updatedAt*1000).toISOString(),managed:Boolean(existing),status:'saved',evidence:'Saved chat metadata. Desktop live status is not available through this connection.',result:existing?.result || ''};
       if (existing) {
         try {
           const turns=await bridge.call('thread/turns/list',{threadId:thread.id,limit:1,sortDirection:'desc',itemsView:'summary'});
@@ -75,7 +91,7 @@ async function tick() {
       agents.push(agent);
     }
     for (const [id, agent] of managed) if (!threads.has(id)) agents.push({...agent,status:'unknown',evidence:'Could not refresh this run.'});
-    store.saveControlState(state=>{state.agents=agents;state.workerAt=new Date().toISOString();state.connected=true;state.connectionError=null;return state;});
+    store.saveControlState(state=>{state.agents=[...agents,...state.agents.filter(a=>!isCodex(a))];state.workerAt=new Date().toISOString();state.connected=true;state.connectionError=null;return state;});
 
   } catch (error) { store.saveControlState(state=>{state.workerAt=new Date().toISOString();state.connected=false;state.connectionError=error.message.slice(0,500);return state;});bridge.close(); }
   finally {
@@ -93,5 +109,5 @@ async function tick() {
   }
 }
 await tick();const timer=setInterval(tick,15000);
-function stop(){stopped=true;for(const child of syncRuns) child.kill();clearInterval(timer);bridge.close();store.close();process.exit(0);}
+async function stop(){if(stopped)return;stopped=true;for(const child of syncRuns) child.cancel();clearInterval(timer);bridge.close();await claude.close();store.close();process.exit(0);}
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

@@ -28,6 +28,6 @@ export function SyncStatus({ status, pending, error }: { status?: string; pendin
       {state.tone === "done" ? <Check size={14} /> : state.tone === "failed" ? <CircleX size={16} /> : <RefreshCw size={14} />}
     </span>
     <div className={styles.syncCopy}><h3>{state.label}</h3><p>{state.detail}</p></div>
-    <span className={styles.pill} data-tone={state.tone}>{state.tone === "active" ? "Working" : state.tone === "done" ? "Imported" : state.tone === "failed" ? "Needs attention" : "Idle"}</span>
+    <span className={styles.pill} data-tone={state.tone}>{state.tone === "active" ? "Working" : state.tone === "done" ? "Updated" : state.tone === "failed" ? "Needs attention" : "Idle"}</span>
   </section>;
 }

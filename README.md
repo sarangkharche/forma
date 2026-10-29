@@ -1,13 +1,13 @@
 # Forma
 
-Forma is a local task dashboard with an optional Codex control centre, source sync and reminders. It runs on your computer and stores its data in SQLite. The public repository starts with an empty task list.
+Forma is a local task dashboard with an optional AI control centre, source sync and reminders. It runs on your computer and stores its data in SQLite. The public repository starts with an empty task list.
 
 ## Requirements
 
 - Node.js 22.13 or newer and npm. Check with `node --version` and `npm --version`.
 - Git, to clone the repository.
 - A modern browser. Browser notifications additionally require notification permission and a supported browser.
-- For Codex features: the Codex CLI installed, signed in and available as `codex` in the shell. Some features also use the Codex desktop app. Access to external sources depends on the connectors and permissions available to that CLI session.
+- For AI features, install and sign in to Codex CLI or Claude Code. The task dashboard works without either CLI. Choose your provider in the Agents view. Forma does not need an API key of its own; the selected CLI manages authentication and billing.
 
 The app binds to `127.0.0.1` on port `5184`. The login service described below is specific to macOS. Other platforms may run the app manually, but their startup and notification behaviour has not been verified here.
 
@@ -34,31 +34,57 @@ Both commands start the web server and the local notification and control worker
 1. Select **Add task** and enter a title. Add notes, category, priority, due date and source links as needed.
 2. Select a task to edit its details. Set its status to reflect your work. Use the completion control when finished, or archive it and restore it later if needed.
 3. Switch between **Open**, **Completed** and **Archived**, use the category filters or search. The interface displays the `⌘ K` search shortcut.
-4. Add context such as the objective, next step, constraints, completion criteria, workspace folder, responsibility, related chats and local artifacts when useful. Save changes before starting a Codex action.
+4. Add context such as the objective, next step, constraints, completion criteria, workspace folder, responsibility, related chats and local artifacts when useful. Save changes before starting an AI action.
 5. Use **I've worked on this** to record progress. Record decisions and handoffs in the task detail so they remain available for later analysis.
 
 The app protects fields you edited when a source update is ingested. It also keeps source updates separately for review. If another update changed a task while your form was open, reopen it before saving again.
 
-## Codex chats and analysis
+## Choose Codex or Claude Code
 
-A task can link to an existing Codex chat or create a new one from the task controls. New task chats use the current Forma working directory by default. To choose another folder before starting Forma, set `FORMA_CHAT_WORKSPACE` to an absolute path:
+Open **Agents**, choose **AI provider** and wait for the selection to save. New requests use this provider; changing it does not move or restart an active request. The saved default is Codex for compatibility. The selected provider is shown beside task analysis and triage controls.
+
+| Feature | Codex | Claude Code |
+| --- | --- | --- |
+| Task analysis and triage | Yes, through the local app server | Yes, through a local CLI process |
+| Progress, result and interrupt in Forma | Yes | Yes |
+| Context session | Codex chat link | Saved session with copyable resume command |
+| Existing saved chat discovery | Codex app server | Only sessions started by Forma |
+| External source Sync | Uses tools available to Codex CLI | External connectors disabled; records unavailable coverage without importing tasks |
+
+Install your chosen CLI using its official instructions: [Codex CLI](https://developers.openai.com/codex/cli/) or [Claude Code](https://code.claude.com/docs/en/overview). Then check it from the same terminal that will start Forma:
+
+```sh
+codex --version
+codex login
+# Or, for Claude Code:
+claude --version
+claude auth login
+```
+
+You only need the commands for your chosen provider. Claude must support `--safe-mode`, `--restricted`, `--setting-sources` and the other options in `lib/providers/index.mjs`; Forma checks required options before running. The integration was exercised with Claude Code 2.1.308 and Codex CLI 0.162.1. Update an older CLI if Forma reports an unsupported option. Do not use permission bypass flags.
+
+Claude runs with only Read, Glob and Grep tools enabled. Shell commands, edits, MCP servers, skills and discovered customizations are disabled for these runs. Managed organisation settings and hooks can still apply. This is CLI tool configuration, not an operating system sandbox. Local readable data may be sent to your chosen AI service. The copyable Claude resume command retains the same tool restrictions; paste it in a terminal to continue. A resumed session outside Forma is not controlled by Forma.
+
+## Chats and analysis
+
+A task can link to an existing Codex chat or create a new context session with the selected provider. Selecting Claude keeps the existing Codex link available and lets you create a separate Claude session. New context sessions use the current Forma working directory by default. Analysis uses the saved task workspace folder; triage falls back to the Forma workspace when none was saved. To choose another folder before starting Forma, set `FORMA_CHAT_WORKSPACE` to an absolute path:
 
 ```sh
 export FORMA_CHAT_WORKSPACE="$HOME/projects/my-project"
 npm run dev
 ```
 
-For analysis, save the task context and a workspace folder, select **Review brief**, inspect or edit the brief, then start the analysis. Triage offers a separate preview before starting. Use the **Agents** and **Attention** views to follow progress, inspect results or interrupt a running action. Review suggested changes yourself; an agent result does not mark your task complete.
+For analysis, save the task context and a workspace folder, select **Review brief**, inspect or edit the brief, then start the analysis with the selected provider. Triage offers a separate preview before starting. Use the **Agents** and **Attention** views to follow progress, inspect results or interrupt a running action. Review suggested changes yourself; an agent result does not mark your task complete.
 
-Codex availability and permissions vary by installation. A linked `codex://threads/...` reference requires a compatible Codex desktop app and an accessible chat. The CLI and the desktop app may have different connector access.
+Provider availability and permissions vary by installation. A linked `codex://threads/...` reference requires a compatible Codex desktop app and an accessible chat. The CLI and the desktop app may have different connector access.
 
 ## Connecting sources and using Sync
 
 Forma does not contain a standalone OAuth setup screen for Jira, Slack, Granola or Google Calendar. Set up and authorise the relevant connectors in the Codex environment you use, then verify the account, workspace and scope available to the local CLI. Consult the connector's own setup and access controls. Connecting a service in another app or Codex session does not prove the local worker can use it.
 
-Select **Sync** in Forma to queue a read only Codex CLI scan. The prompt asks for explicitly assigned unfinished actions from accessible sources and requests separate coverage for Granola, Slack, Jira, Codex and calendar. Review the displayed status, source limitations and any imported actions. An unavailable source means its tasks are unknown, not that there are none. Sync does not automatically execute the tasks or edit external records. This repository does not set up a recurring external automation for you.
+With Codex selected, select **Sync** in Forma to queue a read only Codex CLI scan. The prompt asks for explicitly assigned unfinished actions from accessible sources and requests separate coverage for Granola, Slack, Jira, Codex and calendar. Review the displayed status, source limitations and any imported actions. An unavailable source means its tasks are unknown, not that there are none. Sync does not automatically execute the tasks or edit external records. This repository does not set up a recurring external automation for you.
 
-Sync sends the saved task snapshot to the local Codex run as context. Use it only with sources and data you are authorised to process. If the CLI is unavailable or the run fails, inspect the reported error and associated chat before retrying. Source access and successful imports have not been verified for every possible connector or account.
+Codex Sync sends the saved task snapshot to the local Codex run as context. With Claude Code selected, Sync records unavailable source coverage locally without calling a model. Configure sources in Codex or use the ingestion interface for a separate trusted integration. Use it only with sources and data you are authorised to process. If the CLI is unavailable or the run fails, inspect the reported error and associated chat before retrying. Source access and successful imports have not been verified for every possible connector or account.
 
 ## Calendar and reminders
 
@@ -134,6 +160,12 @@ npm run build
 
 If the app won't start, check Node's version, run `npm ci` again and confirm port 5184 is free. If the dashboard loads but Sync fails, check the CLI sign in, `codex` on `PATH`, connector identity and permissions, then inspect the reported run error. For missing browser alerts, check browser permission, system settings, quiet hours and the inbox. For a missing meeting, check the configured account and whether a separate verified calendar ingestion has actually run.
 
-The public release was tested with 51 automated tests and a production build. Connector access, calendar imports, browser delivery and startup on another machine depend on local configuration and were not verified by that release test. Dependencies should be audited before use; the release installation reported one high and one critical vulnerability.
+The provider release has automated adapter, lifecycle and persistence tests plus a production build. Live synthetic prompts were verified with both installed CLIs; source access and user account integrations are separate checks. Connector access, calendar imports, browser delivery and startup on another machine depend on local configuration and were not verified by that release test. Dependencies should be audited before use; the release installation reported one high and one critical vulnerability.
 
 Forma uses UIArc components under their included MIT notice and Morphicons with Lucide icon data.
+
+## Adding an AI provider
+
+Provider definitions live in `lib/providers/index.mjs`: metadata, fixed executable arguments and event parsers. `startProviderRun` in `lib/providers/run.mjs` handles process output limits, cancellation, timeout and successful terminal results. Add a runtime implementing `dispatch(command)` and `close()` alongside `ClaudeRuntime`, then register it in the worker runtime map. Persistent commands and agents must carry the provider ID; old records default to Codex. Update provider capabilities and the UI description to match actual support. Never accept executable paths or shell fragments from task data.
+
+Test success, failure, missing tools, malformed output, interruption, restart recovery and source coverage before adding the provider to the selector. Keep native session IDs separate from Forma agent IDs. Provide a verified desktop link or a restricted resume command, never a made up Codex link. Completion of an AI run must leave the personal task lifecycle unchanged.

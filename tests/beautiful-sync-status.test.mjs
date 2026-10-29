@@ -18,3 +18,11 @@ test('new requests and errors take precedence over an old completed command', ()
   assert.equal(syncPresentation().tone, 'idle');
   assert.equal(syncPresentation('unknown').tone, 'idle');
 });
+
+test('shared sync copy works for either AI provider', () => {
+  for (const status of [undefined, 'queued', 'processing', 'submitted', 'completed', 'failed']) {
+    const state = syncPresentation(status);
+    assert.doesNotMatch(`${state.label} ${state.detail}`, /Codex|Claude/);
+  }
+  assert.doesNotMatch(syncPresentation(undefined, true).detail, /Codex|Claude/);
+});

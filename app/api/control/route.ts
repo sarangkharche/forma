@@ -1,3 +1,4 @@
+import { setProvider } from '@/lib/providers/index.mjs';
 import { queueTaskChat } from '@/lib/task-chat.mjs';
 import { queueSync } from '@/lib/manual-sync.mjs';
 import { getStore } from '@/lib/store.mjs';
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
   if (!request.headers.get('origin') || !isLocalWrite(request)) return Response.json({error:'Open Forma locally to manage agents.'},{status:403});
   try {
     const body=await request.json(),store=getStore();
+    if (body.action==='provider') return Response.json(setProvider(store,body.provider));
     if (body.action==='chat') return Response.json(queueTaskChat(body.taskId,body.version),{status:202});
     if (body.action==='sync') return Response.json(queueSync(store),{status:202});
     if (body.action==='triage') return Response.json(queueTriage(body.taskId,body.version),{status:202});
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
         if(state.commands.some(c=>c.type==='interrupt'&&c.threadId===agent.id&&['queued','processing'].includes(c.status))) throw new Error('This interruption is already queued.');
         if(state.commands.filter(c=>c.status==='queued').length>=5) throw new Error('Wait for queued requests to finish.');
         state.commands=state.commands.slice(-99);
-        state.commands.push({id:crypto.randomUUID(),type:'interrupt',threadId:agent.id,turnId:agent.turnId,status:'queued',createdAt:new Date().toISOString()});return state;
+        state.commands.push({id:crypto.randomUUID(),type:'interrupt',provider:('provider' in agent ? agent.provider : 'codex'),threadId:agent.id,turnId:agent.turnId,status:'queued',createdAt:new Date().toISOString()});return state;
       });return Response.json({ok:true},{status:202});
     }
     throw new Error('Unknown agent action.');

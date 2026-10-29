@@ -49,7 +49,7 @@ Open **Agents**, choose **AI provider** and wait for the selection to save. New 
 | Progress, result and interrupt in Forma | Yes | Yes |
 | Context session | Codex chat link | Saved session with copyable resume command |
 | Existing saved chat discovery | Codex app server | Only sessions started by Forma |
-| External source Sync | Uses tools available to Codex CLI | External connectors disabled; records unavailable coverage without importing tasks |
+| External source Sync | Uses tools available to Codex CLI | Uses explicitly configured MCP identity and read tools; no Codex installation required |
 
 Install your chosen CLI using its official instructions: [Codex CLI](https://developers.openai.com/codex/cli/) or [Claude Code](https://code.claude.com/docs/en/overview). Then check it from the same terminal that will start Forma:
 
@@ -61,9 +61,9 @@ claude --version
 claude auth login
 ```
 
-You only need the commands for your chosen provider. Claude must support `--safe-mode`, `--restricted`, `--setting-sources` and the other options in `lib/providers/index.mjs`; Forma checks required options before running. The integration was exercised with Claude Code 2.1.308 and Codex CLI 0.162.1. Update an older CLI if Forma reports an unsupported option. Do not use permission bypass flags.
+You only need the commands for your chosen provider. Claude must support `--safe-mode`, `--restricted`, `--setting-sources` and the other options in `lib/providers/index.mjs`; Forma checks required options before running. Claude source Sync requires version 2.1.295 or newer for hooks that block a tool call when the guard fails. The integration was exercised with Claude Code 2.1.308 and Codex CLI 0.162.1. Update an older CLI if Forma reports an unsupported option. Do not use permission bypass flags.
 
-Claude runs with only Read, Glob and Grep tools enabled. Shell commands, edits, MCP servers, skills and discovered customizations are disabled for these runs. Managed organisation settings and hooks can still apply. This is CLI tool configuration, not an operating system sandbox. Local readable data may be sent to your chosen AI service. The copyable Claude resume command retains the same tool restrictions; paste it in a terminal to continue. A resumed session outside Forma is not controlled by Forma.
+Claude task analysis, triage and context sessions run with only Read, Glob and Grep tools enabled. Shell commands, edits, MCP servers, skills and discovered customizations are disabled for these runs. Source Sync has a separate MCP configuration described below. Managed organisation policy can still apply. These are CLI tool restrictions rather than an operating system sandbox. Data read by either mode may be sent to your chosen AI service. The copyable Claude context resume command retains the same local tool restrictions; paste it in a terminal to continue. A resumed session outside Forma is not controlled by Forma.
 
 ## Chats and analysis
 
@@ -80,11 +80,67 @@ Provider availability and permissions vary by installation. A linked `codex://th
 
 ## Connecting sources and using Sync
 
-Forma does not contain a standalone OAuth setup screen for Jira, Slack, Granola or Google Calendar. Set up and authorise the relevant connectors in the Codex environment you use, then verify the account, workspace and scope available to the local CLI. Consult the connector's own setup and access controls. Connecting a service in another app or Codex session does not prove the local worker can use it.
+Forma does not contain a standalone OAuth setup screen for Jira, Slack, Granola or Google Calendar. Authorise sources through your selected CLI and verify the account, workspace and scope available to it. Connecting a service in another app or session does not prove the local worker can use it. Use only sources and data you are authorised to process.
 
-With Codex selected, select **Sync** in Forma to queue a read only Codex CLI scan. The prompt asks for explicitly assigned unfinished actions from accessible sources and requests separate coverage for Granola, Slack, Jira, Codex and calendar. Review the displayed status, source limitations and any imported actions. An unavailable source means its tasks are unknown, not that there are none. Sync does not automatically execute the tasks or edit external records. This repository does not set up a recurring external automation for you.
+Select **Sync** to queue a scan with your selected provider. Review source coverage, limitations and imported actions. An unavailable source means its tasks are unknown rather than absent. Sync does not execute tasks, change external records or import meetings. This repository does not set up a recurring external automation for you.
 
-Codex Sync sends the saved task snapshot to the local Codex run as context. With Claude Code selected, Sync records unavailable source coverage locally without calling a model. Configure sources in Codex or use the ingestion interface for a separate trusted integration. Use it only with sources and data you are authorised to process. If the CLI is unavailable or the run fails, inspect the reported error and associated chat before retrying. Source access and successful imports have not been verified for every possible connector or account.
+### Codex sources
+
+Set up the relevant connectors in the Codex environment you use. Consult each connector's own setup and access controls.
+
+With Codex selected, Sync queues a read only Codex CLI scan. The prompt asks for explicitly assigned unfinished actions from accessible sources and requests separate coverage for Granola, Slack, Jira, Codex and calendar.
+
+Codex Sync sends the saved task snapshot to the local Codex run as context. If the CLI is unavailable or the run fails, inspect the reported error and associated chat before retrying. Source access and successful imports have not been verified for every possible connector or account.
+
+### Claude Code sources
+
+Claude Sync works independently of Codex. It uses only MCP servers and complete tool names from a private local configuration. Start with your service's official MCP setup instructions and the [Claude Code MCP reference](https://code.claude.com/docs/en/mcp). Use credentials limited to reading wherever the service supports them. Verify each tool's real name and behaviour before adding it; a tool name alone does not establish that it only reads data.
+
+Save a configuration like this to `/absolute/path/claude-sync.json`:
+
+```json
+{
+  "mcpServers": {
+    "work": {
+      "type": "http",
+      "url": "https://your-trusted-mcp.example/mcp"
+    }
+  },
+  "sources": {
+    "slack": {
+      "expectedIdentity": "you@example.com",
+      "scope": "Relevant channels and DMs in your intended workspace",
+      "identityTool": "mcp__work__get_profile",
+      "readTools": ["mcp__work__search", "mcp__work__read_thread"]
+    }
+  },
+  "scope": "Only explicit unfinished actions assigned to me for my chosen work"
+}
+```
+
+**The URL and tool names above are schema placeholders. They are not verified endpoints or tools for Slack or any other service.** Replace them with your trusted server's actual configuration and tools. Each source needs an identity tool, expected identity, scope and an explicit list of read tools without wildcards. Supported source names are `granola`, `slack`, `jira`, `documents`, `calendar` and `codex`; configure only the ones you intend to scan. Keep server commands, credentials and this configuration private. Forma never takes executable configuration from tasks or source text.
+
+Validate and copy the file into Forma's private data directory:
+
+```sh
+npm run configure:claude-sync -- /absolute/path/claude-sync.json
+```
+
+The default location is `.todos/claude-sync.json` under the directory where Forma starts or `claude-sync.json` inside `TODOS_DATA_DIR` when set. To use another file directly, set `FORMA_CLAUDE_SYNC_CONFIG` to its absolute path before starting Forma. Config changes apply to the next Sync run. Changes to environment variables or inherited credentials require starting Forma again.
+
+Authenticate the same MCP server definitions using Claude Code:
+
+```sh
+claude --strict-mcp-config --mcp-config /absolute/path/claude-sync.json
+```
+
+In that session, use `/mcp` to check the server and follow its login flow if required. Confirm the intended account and workspace using its identity tool and verify the configured read tools. Authentication remains managed by Claude Code and the service; Forma inherits the environment it starts with. A connection working in another Claude session is not proof that this strict configuration works.
+
+Sync disables built in tools and inherited user or project settings and MCP servers. It enables only Forma's fixed guard and receipt hooks alongside the configured MCP tools. The guard blocks unlisted tools and blocks tool use if it fails. Source Sync uses `--restricted` rather than `--safe-mode` because safe mode disables MCP. Organisation policy can still restrict it. See the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for the underlying guard behaviour.
+
+Before accepting tasks from a source, Forma requires successful calls to its configured identity tool and a read tool plus Claude's report of a matching identity. These receipts prove tool execution; interpreting identity, assignment and completion still relies on the model. The prompt checks identity first, asks for the latest replies and pagination and bounds the first scan to seven days. Later scans start one day before the previous source check. Review imported actions and coverage yourself. Partial access must remain limited or unavailable coverage.
+
+Without a configuration, Claude Sync records unavailable coverage without calling a model. Invalid configuration or a failed run reports an error and preserves existing tasks. Calendar task coverage remains separate from the guarded meeting ingestion described below. Real service access and your account setup need their own verification.
 
 ## Calendar and reminders
 
@@ -158,7 +214,9 @@ npm run lint
 npm run build
 ```
 
-If the app won't start, check Node's version, run `npm ci` again and confirm port 5184 is free. If the dashboard loads but Sync fails, check the CLI sign in, `codex` on `PATH`, connector identity and permissions, then inspect the reported run error. For missing browser alerts, check browser permission, system settings, quiet hours and the inbox. For a missing meeting, check the configured account and whether a separate verified calendar ingestion has actually run.
+If the app won't start, check Node's version, run `npm ci` again and confirm port 5184 is free. If the dashboard loads but Sync fails, check the selected CLI's sign in, availability on `PATH`, connector identity and permissions, then inspect the reported run error. For Claude, also validate the private Sync configuration and authenticate its exact MCP server definitions. For missing browser alerts, check browser permission, system settings, quiet hours and the inbox. For a missing meeting, check the configured account and whether a separate verified calendar ingestion has actually run.
+
+Claude source Sync has automated synthetic MCP transport, guard, ingestion and recovery checks. The real Claude CLI connected to the synthetic server and ran the startup hook. Model driven source reads, imports and write denial remain unverified because the verification account hit its individual spend limit. No real service account access was tested.
 
 The provider release has automated adapter, lifecycle and persistence tests plus a production build. Live synthetic prompts were verified with both installed CLIs; source access and user account integrations are separate checks. Connector access, calendar imports, browser delivery and startup on another machine depend on local configuration and were not verified by that release test. Dependencies should be audited before use; the release installation reported one high and one critical vulnerability.
 

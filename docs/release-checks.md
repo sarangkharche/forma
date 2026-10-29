@@ -19,14 +19,17 @@ The test suite also covers source tool restrictions, source coverage, manual edi
 1. A fresh dependency install with scripts disabled produced a successful production build. The patched dependency audit reported zero vulnerabilities.
 2. The production app smoke check passed on macOS. Restored data included human edits, completed tasks, decisions and saved settings from a consistent SQLite backup.
 3. An isolated macOS LaunchAgent started Forma, restarted it with the saved task intact and was removed. The existing user service and task data were preserved.
-4. A fresh browser session displayed the empty dashboard, manual mode with an Enable AI control and notification preferences. Browser notification setup timed out with an actionable recovery message. No OS notification was observed.
-5. Codex CLI 0.165.0 completed a synthetic app server request. Claude Code 2.1.308 connected to the synthetic MCP server and ran the startup guard. Its model request was rejected by the account spend limit and imported no tasks.
+4. A fresh browser session displayed the empty dashboard, manual mode with an Enable AI control and notification preferences. The in app browser timed out with an actionable recovery message. A separate native Dia session enabled notifications and requested the local display test. Actual server pushes for synthetic inbox reminders were accepted by the push service and the browser posted successful display API receipts. A visible OS alert, click behaviour and denied permission recovery were not verified. The temporary server subscriptions were removed after the check.
+5. Codex CLI 0.165.0 completed a synthetic app server request. Claude Code 2.1.308 connected to the synthetic MCP server and ran the startup guard. The new live attempt on 29 October still returned the individual spend limit error before any successful source tools. It imported no tasks and no fixture mutation was observed. This does not verify model driven read or write denial behaviour.
+6. An independent fresh public clone of `25f5996` passed `npm ci`, manual setup, doctor, lint, 121 tests and the production build with Node 25.6.1 and npm 11.9.0. Doctor emitted the expected missing build warning before the build and unchecked authentication warning. The rehearsal exposed a test assertion that assumed the default chat workspace despite a configured override. That assertion was corrected and verified with an explicit workspace override. No customer took part in this rehearsal.
+
+The local notification test copy now describes a display request on the current device and explicitly separates it from server reminder delivery. Its success message does not claim that an OS banner was observed.
 
 ## Required before general availability
 
 1. Complete a model driven Claude source scan with a trusted test account. Verify identity mismatch handling, a real read and import, pagination, a partial outage and an attempted write that produces no external change. The current account spend limit prevents this verification.
 2. Verify browser alert display, notification clicks and permission recovery in the supported customer browsers and operating systems. Push service acceptance alone is insufficient.
-3. Have a small customer pilot follow the README from a clean machine and verify sign in, source configuration, startup, reminder delivery and recovery. Record the supported configuration and any failures before expanding access.
+3. Have a small customer pilot follow the README from a clean machine and verify sign in, source configuration, startup, reminder delivery and recovery. The [pilot guide](customer-pilot.md) is prepared; no customer has completed it yet. Record the supported configuration and any failures before expanding access.
 
 Windows remains unverified. Login startup is macOS only. Linux support is for manual local startup and the automated workflow. Source authentication is owned by the selected CLI and service; setup and doctor do not grant access or prove connectivity.
 

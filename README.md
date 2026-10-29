@@ -2,6 +2,8 @@
 
 Forma is a local task dashboard with an optional AI control centre, source sync and reminders. It runs on your computer and stores its data in SQLite. The public repository starts with an empty task list.
 
+**Release status: assisted pilot.** General customer availability is still pending live Claude source verification, visible OS notification and click checks and a customer installation pilot. The current verification account is blocked by its Claude spend limit. See [release verification](docs/release-checks.md) for observed results and [customer pilot steps](docs/customer-pilot.md) to complete the remaining checks.
+
 ## Requirements
 
 - Node.js 22.16 or newer in the 22 series, or Node 24 or newer and npm. Use the latest patch of Node 22 or 24. Check with `node --version` and `npm --version`. The SQLite backup API requires this minimum; Node 23 is unsupported.
@@ -154,7 +156,7 @@ Without a configuration, Claude Sync records unavailable coverage without callin
 
 ## Calendar and reminders
 
-The bell opens the notification inbox. Read, dismiss or snooze an item; use **Settings** to adjust inactivity reminders, quiet hours, daily limits, summaries and meeting lead time. Defaults use Europe/London. The inbox is saved locally even if browser delivery fails. To enable browser alerts, choose **Enable notifications**, allow permission in the browser and use **Send test notification**. OS notification settings can also affect delivery. Push service acceptance alone does not prove that an alert was displayed or read.
+The bell opens the notification inbox. Read, dismiss or snooze an item; use **Settings** to adjust inactivity reminders, quiet hours, daily limits, summaries and meeting lead time. Defaults use Europe/London. The inbox is saved locally even if browser delivery fails. To enable browser alerts, choose **Enable notifications**, allow permission in the browser and use **Send test notification**. This button requests a local browser display test; it does not send a reminder through the server. To check the full reminder path, create a new high priority synthetic task after enabling alerts, wait for its inbox reminder and verify the actual system alert and click behaviour. OS notification settings, quiet hours and daily limits can affect delivery. Push service acceptance and the browser's display API confirmation do not prove an alert was visibly displayed or read.
 
 To allow meeting ingestion for an intended work account, configure its email locally:
 
@@ -253,7 +255,9 @@ npm audit --audit-level=high
 
 If the app won't start, check Node's version, run `npm ci` again and confirm port 5184 is free. If the dashboard loads but Sync fails, check the selected CLI's sign in, availability on `PATH`, connector identity and permissions, then inspect the reported run error. For Claude, also validate the private Sync configuration and authenticate its exact MCP server definitions. For missing browser alerts, check browser permission, system settings, quiet hours and the inbox. For a missing meeting, check the configured account and whether a separate verified calendar ingestion has actually run.
 
-Claude source Sync has automated synthetic MCP transport, guard, ingestion and recovery checks. The real Claude CLI connected to the synthetic server and ran the startup hook. Model driven source reads, imports and write denial remain unverified because the verification account hit its individual spend limit. No real service account access was tested.
+Claude source Sync has automated synthetic MCP transport, guard, ingestion and recovery checks. The real Claude CLI connected to the synthetic server and ran the startup hook. A live retry on 29 October 2026 still hit the verification account's individual spend limit before any source tools ran. Model driven source reads, identity mismatch, pagination, outage handling, imports and write denial remain unverified. No real service account access was tested.
+
+A separate clean public clone passed installation, manual setup, doctor, lint, all 121 tests and the production build. Native Dia notification setup succeeded, actual server push requests were accepted and the browser confirmed its display API completed. A visible OS banner, notification click and denied permission recovery were not verified. This installation rehearsal does not replace the [customer pilot](docs/customer-pilot.md).
 
 The dependency update resolves the previously reported Next.js and Zod findings; the current audit reports zero vulnerabilities. CI performs a frozen install with scripts disabled, audit, lint, tests, production build and an isolated app smoke check on macOS and Linux with Node 22 and 24. Smoke checks task edits, completion, reminder preferences, backups, restore and persistence across restart without launching AI. A green pipeline does not prove a customer’s connector access or OS notification delivery. See [release verification](docs/release-checks.md).
 

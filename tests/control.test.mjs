@@ -56,7 +56,7 @@ test('triage uses saved context without changing the task and supports queued ca
  const {queueTriage,cancelQueuedAnalysis}=await import('../lib/control.mjs');
  const {store}=fixture(t);const task=store.create({title:'Find incident guides',links:[{label:'Jira',url:'https://example.com/ticket/TASK-123'}]});
  const command=queueTriage(task.id,task.version,store);
- assert.equal(command.cwd,process.cwd());
+ assert.equal(command.cwd,process.env.FORMA_CHAT_WORKSPACE || process.cwd());
  assert.match(command.text,/Still unknown/);assert.match(command.text,/TASK-123/);
  assert.throws(()=>queueTriage(task.id,task.version,store),e=>e.status===409);
  assert.deepEqual(store.get(task.id),task);
